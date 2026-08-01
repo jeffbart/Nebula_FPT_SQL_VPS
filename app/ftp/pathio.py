@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 from asyncio import CancelledError
 from collections import namedtuple
 from datetime import datetime, timezone
@@ -17,6 +16,7 @@ from uuid import uuid4
 import aiofiles
 
 from .common import DELETE_QUEUE, UPLOAD_QUEUE
+from .disk_space import wait_for_disk_space
 from .errors import PathIOError
 from .repositories import NodeRepository
 
@@ -116,6 +116,14 @@ class SQLServerMemoryIO:
         self.minimum_free_bytes = int(
             float(os.environ.get("MIN_FREE_DISK_GB", "10")) * 1024**3
         )
+        self.disk_pause_check_seconds = max(
+            0.1,
+            float(os.environ.get("DISK_PAUSE_CHECK_SECONDS", "5")),
+        )
+        self.disk_pause_timeout_seconds = max(
+            0.0,
+            float(os.environ.get("DISK_PAUSE_TIMEOUT_SECONDS", "1800")),
+        )
         self.local_path = (
             Path(node.local_path)
             if node.local_path
@@ -139,11 +147,14 @@ class SQLServerMemoryIO:
             if self.offset:
                 await output.seek(self.offset)
             async for data in stream.iter_by_block(1024 * 1024):
-                free_bytes = shutil.disk_usage(self.staging_dir).free
-                if free_bytes - len(data) < self.minimum_free_bytes:
-                    raise OSError(
-                        "Upload interrompido para preservar espaço livre no disco"
-                    )
+                await wait_for_disk_space(
+                    self.staging_dir,
+                    len(data),
+                    self.minimum_free_bytes,
+                    self.disk_pause_check_seconds,
+                    self.disk_pause_timeout_seconds,
+                    self.node.name,
+                )
                 await output.write(data)
             await output.flush()
 

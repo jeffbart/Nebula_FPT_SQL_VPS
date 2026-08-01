@@ -50,6 +50,13 @@ mantém o tamanho lógico durante o processamento, mas os clusters confirmados
 podem ser devolvidos progressivamente ao disco. Se o volume não aceitar arquivos
 esparsos, o upload continua e o temporário completo é apagado ao final.
 
+Quando o espaço livre chega à reserva definida por `MIN_FREE_DISK_GB`, as
+transferências FTP em andamento são pausadas sem encerrar a conexão. Enquanto
+isso, os workers continuam enviando arquivos completos ao Telegram e liberando o
+staging. As transferências retomam automaticamente quando há espaço; se a espera
+ultrapassar `DISK_PAUSE_TIMEOUT_SECONDS`, elas terminam com erro para não manter
+conexões presas indefinidamente.
+
 Cada mensagem enviada ao Telegram identifica o arquivo original e diferencia
 claramente a parte atual do progresso total, por exemplo:
 

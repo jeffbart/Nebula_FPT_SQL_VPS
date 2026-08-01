@@ -150,6 +150,8 @@ Preencha:
 - `CHAT_ID`;
 - `PASSIVE_HOST` e `PASSIVE_PORTS`;
 - caminhos do certificado, staging, dados e logs;
+- reserva de disco e pausa FTP (`MIN_FREE_DISK_GB`,
+  `DISK_PAUSE_CHECK_SECONDS` e `DISK_PAUSE_TIMEOUT_SECONDS`);
 - `NEBULA_DB_CONNECTION`.
 
 Exemplo para SQL Server local:

@@ -79,6 +79,19 @@ o nó SQL. Estados `staging`, `uploading` e `completed` não são selecionados.
 O comando `/help` usa uma mensagem estática versionada em `queue_status.py`, para
 que as instruções operacionais permaneçam alinhadas aos comandos disponíveis.
 
+## Contrapressão por espaço em disco
+
+Antes de gravar cada bloco recebido pelo FTP, `disk_space.py` verifica se a
+gravação preservará `MIN_FREE_DISK_GB`. Sem reserva suficiente, a coroutine de
+gravação aguarda e deixa de consumir novos blocos da conexão, aplicando
+contrapressão ao cliente FTP. Downloads, listagens e os workers Telegram não são
+interrompidos.
+
+O espaço é reavaliado a cada `DISK_PAUSE_CHECK_SECONDS`. A transferência retoma
+automaticamente quando partes confirmadas liberam clusters do staging. Após
+`DISK_PAUSE_TIMEOUT_SECONDS`, a espera termina com erro e o temporário não
+registrado é removido. Um timeout igual a zero permite espera ilimitada.
+
 ## Arquivos esparsos
 
 No Windows, truncar o começo deslocaria todos os offsets e corromperia a
