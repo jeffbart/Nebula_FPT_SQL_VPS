@@ -81,6 +81,7 @@ privada FTPS, sessão Telegram ou backups SQL.
 - [Arquitetura e recuperação](docs/ARCHITECTURE.md)
 - [Segurança e dados sensíveis](docs/SECURITY.md)
 - [Publicação no GitHub](docs/GITHUB.md)
+- [Criação do banco pelo SSMS](sql/README.md)
 - [Créditos e origem](NOTICE.md)
 
 ## Créditos e licença
