@@ -1,4 +1,58 @@
+# Segredos e configuração local
 .env
-__pycache__
+.env.*
+!.env.example
+!*.env.example
+config/.env
+config/*.env
+!config/*.env.example
+!config/.env.vps.example
+
+# Credenciais, certificados privados e sessões Telegram
+*.key
+*.pem
+*.pfx
+*.p12
+*.session
+*.session-*
 *.session*
-*_test.py
+certs/
+data/
+
+# Dados operacionais da VPS
+staging/
+logs/
+backups/
+*.log
+*.bak
+*.trn
+*.mdf
+*.ldf
+unknown_errors.txt
+
+# Ambientes e caches Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Pacotes locais e arquivos temporários
+*.zip
+*.7z
+*.rar
+*.tmp
+*.partial
+*.part
+
+# IDE e sistema operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

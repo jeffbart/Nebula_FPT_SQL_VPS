@@ -1,0 +1,7 @@
+aiofiles>=23.2,<25
+bcrypt>=4.1,<6
+cryptography>=42,<46
+pyodbc>=5.1,<6
+pyrotgfork==2.2.24
+python-dotenv>=1,<2
+TgCrypto>=1.2,<2; python_version < "3.14"

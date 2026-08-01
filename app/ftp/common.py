@@ -5,6 +5,7 @@ from asyncio import IncompleteReadError, Queue
 
 # ADICIONADO: Fila Global de Upload
 UPLOAD_QUEUE = Queue()
+DELETE_QUEUE = Queue()
 
 __all__ = (
     "StreamIO",
@@ -12,6 +13,7 @@ __all__ = (
     "AbstractAsyncLister",
     "setlocale",
     "UPLOAD_QUEUE", # Exportar a fila
+    "DELETE_QUEUE",
 )
 
 class AsyncStreamIterator:
@@ -66,6 +68,9 @@ class StreamIO:
     async def write(self, data):
         self.writer.write(data)
         await self.writer.drain()
+
+    async def start_tls(self, ssl_context):
+        await self.writer.start_tls(ssl_context)
 
     def close(self):
         self.writer.close()
