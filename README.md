@@ -62,6 +62,29 @@ A sequência exibida começa em 1, embora os nomes técnicos das partes continue
 usando índice iniciado em zero (`part_000`, `part_001`, ...). Os tamanhos são
 formatados automaticamente em bytes, KB, MB, GB ou TB.
 
+### Consulta da fila pelo Telegram
+
+Publique o comando abaixo no canal configurado em `CHAT_ID`:
+
+```text
+/queue
+```
+
+O bot tenta apagar o comando e responde com os arquivos em processamento,
+aguardando ou com falha. Para cada arquivo, a resposta mostra o tamanho já
+enviado e o tamanho total. O bot precisa ser administrador do canal e ter
+permissão para publicar e apagar mensagens.
+
+Para baixar um relatório completo dos registros com falha, publique:
+
+```text
+/fetch
+```
+
+O bot envia um arquivo `.txt` tabulado com identificador SQL, caminho virtual,
+tamanho, progresso, tentativas, data da falha e último erro. O relatório é
+montado em memória e não deixa arquivos adicionais no disco da VPS.
+
 ## Início rápido
 
 1. Instale Python 3.11 x64, SQL Server e ODBC Driver 18.

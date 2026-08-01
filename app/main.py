@@ -15,13 +15,15 @@ from pathlib import Path
 
 import aiofiles
 from dotenv import load_dotenv
-from pyrogram import Client
+from pyrogram import Client, filters
 from pyrogram.errors import FloodWait, RPCError
+from pyrogram.handlers import MessageHandler
 
 from ftp import SQLServerPathIO, SQLServerUserManager, Server
 from ftp.common import DELETE_QUEUE, UPLOAD_QUEUE
 from ftp.database import Database
 from ftp.repositories import NodeRepository, UserRepository
+from ftp.queue_status import build_failure_report, build_queue_message
 from ftp.staging_space import release_uploaded_range
 from ftp.upload_caption import build_upload_caption
 
@@ -284,6 +286,61 @@ async def resolve_channel(bot: Client) -> int:
     return chat.id
 
 
+async def queue_command_handler(
+    bot: Client,
+    message,
+    repository: NodeRepository,
+    target_chat_id: int,
+) -> None:
+    """Responde ao comando /queue somente no canal configurado."""
+    if message.chat.id != target_chat_id:
+        return
+    try:
+        await message.delete()
+    except RPCError:
+        logger.warning("Não foi possível apagar o comando /queue do canal")
+
+    try:
+        items = await repository.get_upload_queue_status()
+        response = build_queue_message(items)
+    except Exception:
+        logger.exception("Falha ao consultar a fila pelo comando /queue")
+        response = "⚠️ Não foi possível consultar a fila de uploads."
+    await bot.send_message(target_chat_id, response)
+
+
+async def fetch_command_handler(
+    bot: Client,
+    message,
+    repository: NodeRepository,
+    target_chat_id: int,
+) -> None:
+    """Envia um relatório das falhas sem gravá-lo no disco da VPS."""
+    if message.chat.id != target_chat_id:
+        return
+    try:
+        await message.delete()
+    except RPCError:
+        logger.warning("Não foi possível apagar o comando /fetch do canal")
+
+    try:
+        items = await repository.get_failed_upload_report()
+        report = io.BytesIO(build_failure_report(items).encode("utf-8-sig"))
+        report.name = time.strftime("nebulaftp_falhas_%Y%m%d_%H%M%S.txt")
+        await bot.send_document(
+            chat_id=target_chat_id,
+            document=report,
+            file_name=report.name,
+            caption=f"Relatório de falhas do NebulaFTP — {len(items)} registro(s)",
+        )
+    except Exception:
+        logger.exception("Falha ao gerar o relatório pelo comando /fetch")
+        await bot.send_message(
+            target_chat_id,
+            "⚠️ Não foi possível gerar o relatório de falhas.",
+        )
+
+
 def configure_shutdown(loop: asyncio.AbstractEventLoop, event: asyncio.Event) -> None:
     def stop(*_) -> None:
         loop.call_soon_threadsafe(event.set)
@@ -337,6 +394,35 @@ async def main() -> None:
     )
     await bot.start()
     target_chat_id = await resolve_channel(bot)
+
+    async def handle_queue_command(client, message) -> None:
+        await queue_command_handler(
+            client,
+            message,
+            node_repository,
+            target_chat_id,
+        )
+
+    async def handle_fetch_command(client, message) -> None:
+        await fetch_command_handler(
+            client,
+            message,
+            node_repository,
+            target_chat_id,
+        )
+
+    bot.add_handler(
+        MessageHandler(
+            handle_queue_command,
+            filters.command("queue") & filters.chat(target_chat_id),
+        )
+    )
+    bot.add_handler(
+        MessageHandler(
+            handle_fetch_command,
+            filters.command("fetch") & filters.chat(target_chat_id),
+        )
+    )
 
     SQLServerPathIO.repository = node_repository
     SQLServerPathIO.telegram = bot

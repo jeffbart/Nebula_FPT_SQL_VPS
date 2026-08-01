@@ -8,6 +8,7 @@
 - `app/ftp/repositories.py`: catálogo, usuários, partes e jobs no SQL Server;
 - `app/ftp/staging_space.py`: liberação progressiva de clusters no Windows;
 - `app/ftp/upload_caption.py`: legenda e formatação do progresso das partes;
+- `app/ftp/queue_status.py`: apresentação dos estados consultados por `/queue`;
 - `app/ftp/migrations`: schema SQL versionado.
 
 ## Consistência do upload
@@ -51,6 +52,23 @@ interno continuam começando em zero. O progresso inclui a parte que está sendo
 enviada e é limitado ao tamanho total, inclusive em retomadas e na última parte.
 Os nomes internos ofuscados permanecem inalterados e não substituem o nome
 original exibido na legenda.
+
+## Consulta da fila
+
+O handler de `/queue` aceita o comando apenas no canal definido por `CHAT_ID`.
+O estado é consultado diretamente nas tabelas `nodes` e `file_parts`, em vez de
+inspecionar internamente o `asyncio.Queue`. Assim, a resposta continua coerente
+após reinicializações e inclui o progresso já persistido no SQL Server.
+
+Os arquivos são agrupados pelos estados `uploading`, `staging` e `failed`. A
+resposta limita cada seção a 20 itens e respeita o limite de 4096 caracteres do
+Telegram. Quando permitido, a mensagem original `/queue` é apagada do canal.
+
+O comando `/fetch` consulta todos os nós no estado `failed`, acrescenta os dados
+da tentativa de upload mais recente e envia um relatório tabulado em UTF-8. O
+arquivo é construído em memória; nenhuma cópia do relatório permanece na VPS.
+Esse relatório fornece os `node_id` necessários para auditar uma limpeza antes
+de excluir registros ou mensagens do Telegram.
 
 ## Arquivos esparsos
 

@@ -512,6 +512,71 @@ class NodeRepository:
             """
         )
 
+    async def get_upload_queue_status(self) -> list[dict[str, Any]]:
+        """Lista uploads pendentes, ativos e com falha com seu progresso."""
+        return await self.database.fetch_all(
+            """
+            SELECT
+                n.node_id,
+                n.name,
+                n.parent_path,
+                n.status,
+                n.size_bytes,
+                COALESCE(SUM(p.size_bytes), 0) AS uploaded_bytes,
+                n.modified_at
+            FROM nebula.nodes AS n
+            LEFT JOIN nebula.file_parts AS p ON p.node_id = n.node_id
+            WHERE n.node_type = 'file'
+              AND n.status IN ('staging', 'uploading', 'failed')
+            GROUP BY
+                n.node_id,
+                n.name,
+                n.parent_path,
+                n.status,
+                n.size_bytes,
+                n.modified_at
+            ORDER BY
+                CASE n.status
+                    WHEN 'uploading' THEN 0
+                    WHEN 'staging' THEN 1
+                    ELSE 2
+                END,
+                n.modified_at
+            """
+        )
+
+    async def get_failed_upload_report(self) -> list[dict[str, Any]]:
+        """Retorna detalhes das falhas para exportação pelo bot."""
+        return await self.database.fetch_all(
+            """
+            SELECT
+                n.node_id,
+                n.name,
+                n.parent_path,
+                n.size_bytes,
+                n.modified_at,
+                COALESCE(parts.uploaded_bytes, 0) AS uploaded_bytes,
+                COALESCE(job.attempts, 0) AS attempts,
+                COALESCE(job.last_error, '') AS last_error
+            FROM nebula.nodes AS n
+            OUTER APPLY (
+                SELECT SUM(p.size_bytes) AS uploaded_bytes
+                FROM nebula.file_parts AS p
+                WHERE p.node_id = n.node_id
+            ) AS parts
+            OUTER APPLY (
+                SELECT TOP (1) j.attempts, j.last_error
+                FROM nebula.jobs AS j
+                WHERE j.node_id = n.node_id
+                  AND j.job_type = 'upload'
+                ORDER BY j.job_id DESC
+            ) AS job
+            WHERE n.node_type = 'file'
+              AND n.status = 'failed'
+            ORDER BY n.modified_at, n.node_id
+            """
+        )
+
     async def recover_deletions(self) -> list[int]:
         rows = await self.database.fetch_all(
             """
