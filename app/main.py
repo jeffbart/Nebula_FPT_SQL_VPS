@@ -23,6 +23,7 @@ from ftp.common import DELETE_QUEUE, UPLOAD_QUEUE
 from ftp.database import Database
 from ftp.repositories import NodeRepository, UserRepository
 from ftp.staging_space import release_uploaded_range
+from ftp.upload_caption import build_upload_caption
 
 load_dotenv(Path(os.environ.get("NEBULA_ENV_FILE", ".env")))
 
@@ -189,7 +190,14 @@ async def upload_worker(
                                 chat_id=target_chat_id,
                                 document=document,
                                 file_name=chunk_name,
-                                caption="",
+                                caption=build_upload_caption(
+                                    filename=task["filename"],
+                                    part_number=part_number,
+                                    chunk_size=len(chunk),
+                                    uploaded_offset=uploaded_offset,
+                                    total_size=size,
+                                    configured_chunk_size=CHUNK_SIZE,
+                                ),
                             )
                             break
                         except FloodWait as exception:

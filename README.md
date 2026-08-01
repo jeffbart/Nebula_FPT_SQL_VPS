@@ -15,6 +15,7 @@ referências das mensagens.
 - senhas FTP protegidas com bcrypt;
 - catálogo e pastas persistentes;
 - upload multipartes para canal privado do Telegram;
+- legendas das partes com nome, sequência e progresso acumulado do arquivo;
 - retomada de upload após falha ou reinício;
 - remoção das mensagens do Telegram ao excluir arquivos;
 - liberação progressiva do espaço do staging em NTFS compatível;
@@ -39,7 +40,7 @@ NebulaFTP\
 
 1. O cliente envia um arquivo por FTPS para o staging.
 2. O worker lê uma parte de tamanho configurável.
-3. O bot confirma o envio da parte ao Telegram.
+3. O bot envia a parte ao Telegram com nome, sequência e progresso acumulado.
 4. A referência da mensagem é persistida no SQL Server.
 5. O intervalo correspondente é desalocado do arquivo esparso no Windows.
 6. Ao final, o catálogo é marcado como concluído e o arquivo lógico é removido.
@@ -48,6 +49,18 @@ A ordem Telegram → SQL → liberação local evita perder dados. Em NTFS, o ar
 mantém o tamanho lógico durante o processamento, mas os clusters confirmados
 podem ser devolvidos progressivamente ao disco. Se o volume não aceitar arquivos
 esparsos, o upload continua e o temporário completo é apagado ao final.
+
+Cada mensagem enviada ao Telegram identifica o arquivo original e diferencia
+claramente a parte atual do progresso total, por exemplo:
+
+```text
+backup.zip
+(05 de 35) (300 MB de 2,7 GB)
+```
+
+A sequência exibida começa em 1, embora os nomes técnicos das partes continuem
+usando índice iniciado em zero (`part_000`, `part_001`, ...). Os tamanhos são
+formatados automaticamente em bytes, KB, MB, GB ou TB.
 
 ## Início rápido
 
