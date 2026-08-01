@@ -14,6 +14,19 @@ STATUS_SECTIONS = (
     ("failed", "⚠️ Com falha"),
 )
 
+HELP_MESSAGE = """ℹ️ Comandos do NebulaFTP
+
+/queue — Mostra uploads em processamento, aguardando e com falha.
+
+/fetch — Envia um relatório completo dos uploads com falha.
+
+/clearfailed — Mostra o aviso de limpeza.
+/clearfailed confirmar — Remove todos os uploads com falha.
+
+/help — Mostra estas instruções.
+
+⚠️ A limpeza não afeta arquivos aguardando, em processamento ou concluídos."""
+
 
 def _progress(item: dict[str, Any]) -> str:
     uploaded = int(item.get("uploaded_bytes") or 0)
@@ -83,4 +96,4 @@ def build_failure_report(items: list[dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
-__all__ = ["build_failure_report", "build_queue_message"]
+__all__ = ["HELP_MESSAGE", "build_failure_report", "build_queue_message"]

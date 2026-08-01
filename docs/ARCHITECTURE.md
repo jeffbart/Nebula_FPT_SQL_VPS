@@ -70,6 +70,15 @@ arquivo é construído em memória; nenhuma cópia do relatório permanece na VP
 Esse relatório fornece os `node_id` necessários para auditar uma limpeza antes
 de excluir registros ou mensagens do Telegram.
 
+O comando destrutivo `/clearfailed` só é executado com o argumento literal
+`confirmar`. Em uma transação, todos os nós `failed` passam para `deleting` e
+recebem jobs de exclusão. Os IDs são colocados em `DELETE_QUEUE`; o worker apaga
+partes do Telegram, remove o staging local quando presente e, por último, exclui
+o nó SQL. Estados `staging`, `uploading` e `completed` não são selecionados.
+
+O comando `/help` usa uma mensagem estática versionada em `queue_status.py`, para
+que as instruções operacionais permaneçam alinhadas aos comandos disponíveis.
+
 ## Arquivos esparsos
 
 No Windows, truncar o começo deslocaria todos os offsets e corromperia a

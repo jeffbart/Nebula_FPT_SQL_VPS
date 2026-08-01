@@ -577,6 +577,38 @@ class NodeRepository:
             """
         )
 
+    async def schedule_failed_deletions(self) -> list[int]:
+        """Marca todos os uploads com falha para exclusão recuperável."""
+        def operation(cursor: Any) -> list[int]:
+            rows = cursor.execute(
+                """
+                UPDATE nebula.nodes
+                SET status = 'deleting', modified_at = SYSUTCDATETIME()
+                OUTPUT INSERTED.node_id
+                WHERE node_type = 'file' AND status = 'failed'
+                """
+            ).fetchall()
+            node_ids = [int(row[0]) for row in rows]
+            if node_ids:
+                cursor.execute(
+                    """
+                    INSERT INTO nebula.jobs (job_type, node_id)
+                    SELECT 'delete', n.node_id
+                    FROM nebula.nodes AS n
+                    WHERE n.status = 'deleting'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM nebula.jobs AS j
+                          WHERE j.node_id = n.node_id
+                            AND j.job_type = 'delete'
+                            AND j.status IN ('pending', 'running')
+                      )
+                    """
+                )
+            return node_ids
+
+        return await self.database.transaction(operation)
+
     async def recover_deletions(self) -> list[int]:
         rows = await self.database.fetch_all(
             """

@@ -2,7 +2,7 @@ import unittest
 import ast
 from pathlib import Path
 
-from ftp.queue_status import build_failure_report, build_queue_message
+from ftp.queue_status import HELP_MESSAGE, build_failure_report, build_queue_message
 
 
 class QueueStatusTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class QueueStatusTests(unittest.TestCase):
             and node.func.id == "MessageHandler"
         ]
 
-        self.assertEqual(len(message_handlers), 2)
+        self.assertEqual(len(message_handlers), 4)
         for handler in message_handlers:
             self.assertNotIsInstance(handler.args[0], ast.Lambda)
 
@@ -26,6 +26,10 @@ class QueueStatusTests(unittest.TestCase):
             build_queue_message([]),
             "✅ A fila de uploads está vazia.",
         )
+
+    def test_help_lists_all_commands(self) -> None:
+        for command in ("/queue", "/fetch", "/clearfailed", "/help"):
+            self.assertIn(command, HELP_MESSAGE)
 
     def test_groups_files_and_formats_progress(self) -> None:
         mb = 1024**2

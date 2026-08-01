@@ -85,6 +85,20 @@ O bot envia um arquivo `.txt` tabulado com identificador SQL, caminho virtual,
 tamanho, progresso, tentativas, data da falha e último erro. O relatório é
 montado em memória e não deixa arquivos adicionais no disco da VPS.
 
+Depois de revisar o relatório, todos os uploads no estado `failed` podem ser
+agendados para exclusão com confirmação explícita:
+
+```text
+/clearfailed confirmar
+```
+
+A limpeza não afeta arquivos aguardando, em processamento ou concluídos. Partes
+eventualmente persistidas são apagadas do Telegram antes da remoção do registro
+SQL, e o trabalho pendente é retomado após uma reinicialização.
+
+O comando `/help` apresenta no próprio canal um resumo desses comandos, incluindo
+o argumento de confirmação exigido para a limpeza.
+
 ## Início rápido
 
 1. Instale Python 3.11 x64, SQL Server e ODBC Driver 18.

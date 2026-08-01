@@ -23,7 +23,7 @@ from ftp import SQLServerPathIO, SQLServerUserManager, Server
 from ftp.common import DELETE_QUEUE, UPLOAD_QUEUE
 from ftp.database import Database
 from ftp.repositories import NodeRepository, UserRepository
-from ftp.queue_status import build_failure_report, build_queue_message
+from ftp.queue_status import HELP_MESSAGE, build_failure_report, build_queue_message
 from ftp.staging_space import release_uploaded_range
 from ftp.upload_caption import build_upload_caption
 
@@ -341,6 +341,62 @@ async def fetch_command_handler(
         )
 
 
+async def clear_failed_command_handler(
+    bot: Client,
+    message,
+    repository: NodeRepository,
+    target_chat_id: int,
+) -> None:
+    """Agenda a exclusão de todas as falhas após confirmação explícita."""
+    if message.chat.id != target_chat_id:
+        return
+    command = message.command or []
+    confirmed = len(command) > 1 and command[1].casefold() == "confirmar"
+    if not confirmed:
+        await bot.send_message(
+            target_chat_id,
+            "⚠️ Esta operação remove todos os uploads com falha. "
+            "Para confirmar, envie: /clearfailed confirmar",
+        )
+        return
+
+    try:
+        await message.delete()
+    except RPCError:
+        logger.warning("Não foi possível apagar o comando /clearfailed do canal")
+
+    try:
+        node_ids = await repository.schedule_failed_deletions()
+        for node_id in node_ids:
+            await DELETE_QUEUE.put(node_id)
+        await bot.send_message(
+            target_chat_id,
+            f"🧹 Limpeza agendada: {len(node_ids)} registro(s) com falha. "
+            "O processo continuará em segundo plano.",
+        )
+    except Exception:
+        logger.exception("Falha ao agendar limpeza pelo comando /clearfailed")
+        await bot.send_message(
+            target_chat_id,
+            "⚠️ Não foi possível agendar a limpeza dos registros com falha.",
+        )
+
+
+async def help_command_handler(
+    bot: Client,
+    message,
+    target_chat_id: int,
+) -> None:
+    """Mostra os comandos administrativos disponíveis no canal."""
+    if message.chat.id != target_chat_id:
+        return
+    try:
+        await message.delete()
+    except RPCError:
+        logger.warning("Não foi possível apagar o comando /help do canal")
+    await bot.send_message(target_chat_id, HELP_MESSAGE)
+
+
 def configure_shutdown(loop: asyncio.AbstractEventLoop, event: asyncio.Event) -> None:
     def stop(*_) -> None:
         loop.call_soon_threadsafe(event.set)
@@ -411,6 +467,21 @@ async def main() -> None:
             target_chat_id,
         )
 
+    async def handle_clear_failed_command(client, message) -> None:
+        await clear_failed_command_handler(
+            client,
+            message,
+            node_repository,
+            target_chat_id,
+        )
+
+    async def handle_help_command(client, message) -> None:
+        await help_command_handler(
+            client,
+            message,
+            target_chat_id,
+        )
+
     bot.add_handler(
         MessageHandler(
             handle_queue_command,
@@ -421,6 +492,18 @@ async def main() -> None:
         MessageHandler(
             handle_fetch_command,
             filters.command("fetch") & filters.chat(target_chat_id),
+        )
+    )
+    bot.add_handler(
+        MessageHandler(
+            handle_clear_failed_command,
+            filters.command("clearfailed") & filters.chat(target_chat_id),
+        )
+    )
+    bot.add_handler(
+        MessageHandler(
+            handle_help_command,
+            filters.command("help") & filters.chat(target_chat_id),
         )
     )
 
