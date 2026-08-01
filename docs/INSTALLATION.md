@@ -160,6 +160,29 @@ NEBULA_DB_CONNECTION=DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;DAT
 
 O arquivo `config\.env` contém segredos e não deve ser enviado ao GitHub.
 
+### Criar o bot e o canal Telegram
+
+Antes de preencher as quatro variáveis do Telegram:
+
+1. obtenha `API_ID` e `API_HASH` em `https://my.telegram.org`;
+2. crie um bot oficial usando `/newbot` no `@BotFather`;
+3. crie um canal privado exclusivo;
+4. adicione o bot como administrador;
+5. permita publicar e apagar mensagens;
+6. publique uma mensagem e obtenha o ID numérico do canal;
+7. preencha `API_ID`, `API_HASH`, `BOT_TOKEN` e `CHAT_ID` no `.env`.
+
+O procedimento completo, incluindo comandos PowerShell para testar o token e
+obter o `CHAT_ID`, está em
+[Configuração do Telegram](TELEGRAM_SETUP.md).
+
+Na raiz do projeto, os mesmos procedimentos estão automatizados por:
+
+```bat
+telegram_obter_chat_id.bat
+telegram_testar.bat
+```
+
 ## 5. Gerar o certificado FTPS
 
 Para laboratório:

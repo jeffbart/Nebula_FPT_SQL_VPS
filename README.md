@@ -78,11 +78,19 @@ privada FTPS, sessão Telegram ou backups SQL.
 ## Documentação
 
 - [Instalação no Windows VPS](docs/INSTALLATION.md)
+- [Criação do bot e canal Telegram](docs/TELEGRAM_SETUP.md)
 - [Arquitetura e recuperação](docs/ARCHITECTURE.md)
 - [Segurança e dados sensíveis](docs/SECURITY.md)
 - [Publicação no GitHub](docs/GITHUB.md)
 - [Criação do banco pelo SSMS](sql/README.md)
 - [Créditos e origem](NOTICE.md)
+
+Utilitários Telegram disponíveis na raiz:
+
+```bat
+telegram_obter_chat_id.bat
+telegram_testar.bat
+```
 
 ## Créditos e licença
 
